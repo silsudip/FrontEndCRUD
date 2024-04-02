@@ -2,7 +2,7 @@ import * as React from 'react';
 import { IMyService } from "../services/business/IMyService";
 import { useAppDispatch } from '../redux/stores/store';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getProductByIdThunkAsync, resetProduct, resetProducts, setSelectedProduct } from '../redux/reducers/product';
+import { getProductByIdThunkAsync, resetProduct, resetProducts, setSelectedProduct, updateProductThunkAsync } from '../redux/reducers/product';
 import Utils from '../services/Utils';
 import { IProduct } from '../models/interfaces/IProduct';
 import { useSelector } from 'react-redux';
@@ -38,19 +38,20 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
 
     const loadProduct = (): void => {
         if (searchParams.search.toUpperCase().indexOf('NEW') !== -1) {
+            resetForm();
             createProduct();
         }
-        else {
-            const paramId: number = +searchParams.search.split('=')[1];
-            if (product === undefined) {
-                dispatch(getProductByIdThunkAsync({ myService: service, id: paramId })).then().catch((error) => {
-                });
-            } else if (paramId !== product.id) {
-                dispatch(resetProduct());
-                dispatch(getProductByIdThunkAsync({ myService: service, id: paramId })).then().catch((error) => {
-                });
-            }
-        }
+        // else {
+        //     const paramId: number = +searchParams.search.split('=')[1];
+        //     if (product === undefined) {
+        //         dispatch(getProductByIdThunkAsync({ myService: service, id: paramId })).then().catch((error) => {
+        //         });
+        //     } else if (paramId !== product.id) {
+        //         // dispatch(resetProduct());
+        //         dispatch(getProductByIdThunkAsync({ myService: service, id: paramId })).then().catch((error) => {
+        //         });
+        //     }
+        // }
     }
 
 
@@ -58,6 +59,28 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
         dispatch(resetProducts());
         navigate('/products');
     }
+    const resetForm = ():void=>{
+        setDescription('');
+        setCanExpire(false);
+        setExpiryDate(undefined);
+        setCategory('');
+        setPrice(0);
+        setIsSpecial(false);
+    }
+    useEffect(() => {
+        console.log('Product', product);
+        if (product === undefined) {
+            resetForm();
+        }
+        else{
+            setDescription(product.description);
+            setCanExpire(product.canExpire);
+            setExpiryDate(Utils.getDateFromString(product.expiryDate));
+            setCategory(product.category);
+            setPrice(product.price);
+            setIsSpecial(product.isSpecial);
+        }
+    }, [product]);
 
     useEffect(() => {
         if (service) {
@@ -66,8 +89,22 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
     }, [searchParams.search]);
 
     const saveProduct = (): void => {
+        const tmpProduct: IProduct = {
+            id: product !== undefined ? product.id : 0,
+            description: description,
+            canExpire: canExpire,
+            expiryDate: expiryDate !== null && expiryDate !== undefined ? Utils.getFormatDate(expiryDate): '',
+            category: category,
+            price: price,
+            isSpecial: isSpecial
+        };
+
+        dispatch(updateProductThunkAsync({ myService: service, product: tmpProduct })).then(() => {
+        }).catch((error) => {
+        });
+        navigate('/products');
     };
-    const cancelEdit = (): void=>{
+    const cancelEdit = (): void => {
         dispatch(resetProduct());
         navigate('/products');
     }
@@ -86,6 +123,7 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
         setPrice(tmpValue);
     };
     const onChangeCanExpireVal = (ev: ChangeEvent<HTMLInputElement>, data: CheckboxOnChangeData): void => {
+        console.log('Check box',data);
         const tmpValue: boolean = data === undefined ? false : data.checked == true ? true : false;
 
         if (product !== undefined) {
@@ -111,7 +149,7 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
         <div>
             <div>
                 <Field label="Description">
-                    <Input onChange={onChangeDescriptionVal} />
+                    <Input onChange={onChangeDescriptionVal} value={description}/>
                 </Field>
 
                 <Field label="Can Expire?">
@@ -127,7 +165,7 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
                 </Field>
 
                 <Field label="Category">
-                    <Combobox onOptionSelect={onChangeCategoryVal}>
+                    <Combobox onOptionSelect={onChangeCategoryVal} value={category}>
                         {options.map((option) => (
                             <Option key={option}>
                                 {option}
@@ -137,14 +175,13 @@ const EditProduct: React.FunctionComponent<IEditProductProps> = ({ service }) =>
                 </Field>
 
                 <Field label="Price">
-                    <Input onChange={onChangePriceVal} />
+                    <Input onChange={onChangePriceVal} value={price.toString()}/>
                 </Field>
 
                 <Field label="Is Special?">
                     <Checkbox
-                        checked={canExpire}
+                        checked={isSpecial}
                         onChange={onIsSpecialVal}
-                        label="Checked"
                     />
                 </Field>
             </div>

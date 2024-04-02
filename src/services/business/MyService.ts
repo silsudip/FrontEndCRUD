@@ -13,8 +13,8 @@ export class MyService implements IMyService {
     public async getProductById(id: number): Promise<IProduct | undefined> {
         const logger = new ConsoleLogger();
         try {
-            for(let i=0;i<this.AllProducts.length;i++){
-                if(this.AllProducts[i].id === id){
+            for (let i = 0; i < this.AllProducts.length; i++) {
+                if (this.AllProducts[i].id === id) {
                     return this.AllProducts[i];
                 }
             }
@@ -48,9 +48,22 @@ export class MyService implements IMyService {
     public async addUpdateProduct(productItem: IProduct): Promise<number> {
         const logger = new ConsoleLogger();
         try {
-            const tmpNewProductId:number = this.AllProducts.length;
-            this.AllProducts = [...this.AllProducts, { ...productItem, id: tmpNewProductId }];
-            return Promise.resolve(tmpNewProductId);
+            if (productItem.id === 0) {
+                const tmpNewProductId: number = this.AllProducts.length;
+                this.AllProducts = [...this.AllProducts, { ...productItem, id: tmpNewProductId }];
+                return Promise.resolve(tmpNewProductId);
+            }
+            else {
+                this.AllProducts = this.AllProducts.map(p => {
+                    if (p.id !== productItem.id) {
+                        return p;
+                    }
+                    else {
+                        return productItem;
+                    }
+                });
+                return Promise.resolve(productItem.id);
+            }
         } catch (error) {
             logger.error(error);
             throw error;

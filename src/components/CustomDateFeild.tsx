@@ -5,7 +5,6 @@ import { DatePicker } from "@fluentui/react-datepicker-compat";
 import {
     CalendarCancel24Filled,
 } from "@fluentui/react-icons";
-import styles from './OnDemand.module.scss';
 import Utils from '../services/Utils';
 
 export interface ICustomDateFeildProps {
@@ -47,7 +46,7 @@ const CustomDateFeild: React.FunctionComponent<ICustomDateFeildProps> = ({ date,
         [date],
     );
     return (
-        <div className={`${styles.Horizontal}`}>
+        <div>
             <div className={inlineStyles.clearControl}>
                 <DatePicker
                     // isRequired={isRequired === undefined ? false : isRequired}
