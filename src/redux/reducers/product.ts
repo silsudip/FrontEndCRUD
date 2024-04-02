@@ -1,22 +1,18 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { IProduct } from "../../models/interfaces/IProduct";
 import { IMyService } from "../../services/business/IMyService";
 import { ConsoleLogger } from "../../models/classes/ConsoleLogger";
 
 export interface IProductState {
     products: IProduct[];
+    selectedProduct: IProduct | undefined;
     loading: boolean;
     error: string | undefined;
 }
 
 const initialState: IProductState = {
-    products: [
-        { "id": 1, "description": "Carrot", "canExpire": true, "expiryDate": "2024-04-30", "category": "Vegetables", "price": 1.99, "isSpecial": false },
-        { "id": 2, "description": "Beef", "canExpire": false, "expiryDate": "", "category": "Meat", "price": 9.99, "isSpecial": true },
-        { "id": 3, "description": "Tomato", "canExpire": true, "expiryDate": "2024-04-30", "category": "Vegetables", "price": 2.49, "isSpecial": true },
-        { "id": 4, "description": "Chicken", "canExpire": false, "expiryDate": "", "category": "Meat", "price": 7.99, "isSpecial": false },
-        { "id": 5, "description": "Apple", "canExpire": true, "expiryDate": "2024-04-30", "category": "Fruits", "price": 0.99, "isSpecial": false }
-    ],
+    products: [],
+    selectedProduct: undefined,
     loading: false,
     error: undefined
 }
@@ -36,6 +32,22 @@ export const getAllProductsThunkAsync = createAsyncThunk<IProduct[], IMyService 
         } catch (error) {
             logger.error(error);
             return thunkAPI.rejectWithValue("Failed to fetch products.");
+        }
+    }
+);
+export const getProductByIdThunkAsync = createAsyncThunk<IProduct | undefined, { myService: IMyService | undefined, id: number }, { rejectValue: string }>(
+    "fetchproductbyid",
+    async (args, thunkAPI) => {
+        try {
+            if (args.myService === undefined) {
+                return thunkAPI.rejectWithValue("Failed to get product as service is not defined.");
+            }
+            else {
+                const product: IProduct | undefined= await args.myService.getProductById(args.id);
+                return product;
+            }
+        } catch (error) {
+            return thunkAPI.rejectWithValue("Failed to fetch product.");
         }
     }
 );
@@ -98,6 +110,20 @@ export const productSlice = createSlice({
                 state.loading = false;
                 state.error = action.error.message || 'Something went wrong';
             })
+        builder.addCase(getProductByIdThunkAsync.pending, (state) => {
+                state.loading = true;
+                state.error = initialState.error;
+            })
+            .addCase(getProductByIdThunkAsync.fulfilled, (state, action) => {
+                // setTimeout(() => {
+                state.loading = false;
+                state.selectedProduct = action.payload;
+                // }, 3000);
+            })
+            .addCase(getProductByIdThunkAsync.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message || 'Something went wrong';
+            })
         builder
             .addCase(updateProductThunkAsync.pending, (state) => {
                 state.loading = true;
@@ -124,13 +150,19 @@ export const productSlice = createSlice({
             })
     },
     reducers: {
+        setSelectedProduct: (state, action: PayloadAction<IProduct>) => {
+            state.selectedProduct = action.payload
+        },
+        resetProduct: (state) => {
+            state.selectedProduct= initialState.selectedProduct;
+        },
         resetProducts: (state) => {
             state.products = initialState.products;
         }
     }
 })
 
-export const { resetProducts } = productSlice.actions;
+export const { setSelectedProduct, resetProduct , resetProducts } = productSlice.actions;
 
 
 export default productSlice.reducer;
